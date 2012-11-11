@@ -4,17 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public abstract class AbsResultSetHandler<T> {
-
-    private T result;
-
-    public T getResult() {
-        return result;
-    }
-
-    protected void setResult(final T result) {
-        this.result = result;
-    }
+public abstract class AbsResultSetHandler<T> extends AbsResultHandler<T> {
 
     protected void execute(final PreparedStatement stmt) throws SQLException {
         SQLException ex = null;
@@ -31,7 +21,7 @@ public abstract class AbsResultSetHandler<T> {
         }
     }
 
-    private SQLException closeResultSet(final ResultSet rs, final SQLException ex) {
+    private static SQLException closeResultSet(final ResultSet rs, final SQLException ex) {
         SQLException ret = ex;
         try {
             rs.close();

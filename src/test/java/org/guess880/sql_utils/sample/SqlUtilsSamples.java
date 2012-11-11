@@ -11,15 +11,26 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.guess880.sql_utils.AbsResultSetHandler;
-import org.guess880.sql_utils.AbsSelectStatementHandler;
-import org.guess880.sql_utils.AbsUpdateStatementHandler;
+import org.guess880.sql_utils.SelectStatementHandler;
+import org.guess880.sql_utils.UpdateStatementHandler;
+import org.guess880.sql_utils.ParameterHandler;
 
 public class SqlUtilsSamples {
 
     public void selectSample() throws SQLException {
         final Connection con = DriverManager.getConnection("url", "user", "password");
         try {
-            final AbsResultSetHandler<Map<String, Object>> resultHandler = new AbsResultSetHandler<Map<String,Object>>() {
+            final Map<String, Object> result = new SelectStatementHandler<Map<String, Object>>()
+            .setConnection(con)
+            .setSql("SELECT string, bigdecimal, timestamp FROM table WHERE string = ? AND long = ?")
+            .setParameterHandler(new ParameterHandler() {
+                @Override
+                public void handle(final PreparedStatement stmt) throws SQLException {
+                    stmt.setString(1, "key");
+                    stmt.setLong(2, 1L);
+                }
+            })
+            .setResultHandler(new AbsResultSetHandler<Map<String,Object>>() {
                 @Override
                 protected void handle(final ResultSet rs) throws SQLException {
                     final Map<String, Object> ret = new HashMap<String, Object>();
@@ -32,21 +43,13 @@ public class SqlUtilsSamples {
                         throw new SQLException("No record.");
                     }
                 }
-            };
-            new AbsSelectStatementHandler() {
-                @Override
-                protected void setParameters(final PreparedStatement stmt) throws SQLException {
-                    stmt.setString(1, "key");
-                    stmt.setLong(2, 1L);
-                }
-            }
-            .setResultSetHandler(resultHandler)
-            .setSql("SELECT string, bigdecimal, timestamp FROM table WHERE string = ? AND long = ?")
-            .setConnection(con)
-            .execute();
-            System.out.println(resultHandler.getResult().get("column1"));
-            System.out.println(resultHandler.getResult().get("column2"));
-            System.out.println(resultHandler.getResult().get("column3"));
+            })
+            .execute()
+            .getResult()
+            ;
+            System.out.println(result.get("column1"));
+            System.out.println(result.get("column2"));
+            System.out.println(result.get("column3"));
         } finally {
             con.close();
         }
@@ -55,18 +58,19 @@ public class SqlUtilsSamples {
     public void updateSample() throws SQLException {
         final Connection con = DriverManager.getConnection("url", "user", "password");
         try {
-            final AbsUpdateStatementHandler handler = (AbsUpdateStatementHandler) new AbsUpdateStatementHandler() {
+            new UpdateStatementHandler()
+            .setConnection(con)
+            .setSql("INSERT INTO table (string, bigdecimal, timestamp) VALUES (?, ?, ?)")
+            .setParameterHandler(new ParameterHandler() {
                 @Override
-                protected void setParameters(final PreparedStatement stmt) throws SQLException {
+                public void handle(final PreparedStatement stmt) throws SQLException {
                     stmt.setString(1, "key");
                     stmt.setBigDecimal(2, new BigDecimal("1"));
                     stmt.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
                 }
-            }
-            .setSql("INSERT INTO table (string, bigdecimal, timestamp) VALUES (?, ?, ?)")
-            .setConnection(con);
-            handler.execute();
-            System.out.println(handler.getResult());
+            })
+            .execute()
+            .getResult();
         } finally {
             con.close();
         }
